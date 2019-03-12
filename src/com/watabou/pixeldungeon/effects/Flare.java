@@ -1,6 +1,6 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2014  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,8 +31,10 @@ import android.util.FloatMath;
 import com.watabou.gltextures.Gradient;
 import com.watabou.gltextures.SmartTexture;
 import com.watabou.noosa.Game;
+import com.watabou.noosa.Group;
 import com.watabou.noosa.NoosaScript;
 import com.watabou.noosa.Visual;
+import com.watabou.utils.PointF;
 
 public class Flare extends Visual {
 	
@@ -52,10 +54,6 @@ public class Flare extends Visual {
 	public Flare( int nRays, float radius ) {
 		
 		super( 0, 0, 0, 0 );
-		
-		// FIXME
-		// Texture is incorrectly created every time we need
-		// to show the effect, it must be refactored
 		
 		int gradient[] = {0xFFFFFFFF, 0x00FFFFFF};
 		texture = new Gradient( gradient );
@@ -116,6 +114,15 @@ public class Flare extends Visual {
 	public Flare show( Visual visual, float duration ) {
 		point( visual.center() );
 		visual.parent.addToBack( this );
+		
+		lifespan = this.duration = duration;
+		
+		return this;
+	}
+	
+	public Flare show( Group parent, PointF pos, float duration ) {
+		point( pos );
+		parent.add( this );
 		
 		lifespan = this.duration = duration;
 		

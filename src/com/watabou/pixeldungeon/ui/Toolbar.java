@@ -1,6 +1,6 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2014  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -49,16 +49,20 @@ public class Toolbar extends Component {
 	private Tool btnWait;
 	private Tool btnSearch;
 	private Tool btnInfo;
-	private Tool btnResume;
 	private Tool btnInventory;
-	private Tool btnQuick;
+	private Tool btnQuick1;
+	private Tool btnQuick2;
 	
 	private PickedUpItem pickedUp;
 	
 	private boolean lastEnabled = true;
 	
+	private static Toolbar instance;
+	
 	public Toolbar() {
 		super();
+		
+		instance = this;
 		
 		height = btnInventory.height();
 	}
@@ -66,7 +70,7 @@ public class Toolbar extends Component {
 	@Override
 	protected void createChildren() {
 		
-		add( btnWait = new Tool( 0, 7, 20, 24 ) {
+		add( btnWait = new Tool( 0, 7, 20, 25 ) {
 			@Override
 			protected void onClick() {
 				Dungeon.hero.rest( false );
@@ -77,28 +81,21 @@ public class Toolbar extends Component {
 			};
 		} );
 		
-		add( btnSearch = new Tool( 20, 7, 20, 24 ) {
+		add( btnSearch = new Tool( 20, 7, 20, 25 ) {
 			@Override
 			protected void onClick() {
 				Dungeon.hero.search( true );
 			}
 		} );
 		
-		add( btnInfo = new Tool( 40, 7, 21, 24 ) {
+		add( btnInfo = new Tool( 40, 7, 21, 25 ) {
 			@Override
 			protected void onClick() {
 				GameScene.selectCell( informer );
 			}
 		} );
 		
-		add( btnResume = new Tool( 61, 7, 21, 24 ) {
-			@Override
-			protected void onClick() {
-				Dungeon.hero.resume();
-			}
-		} );
-		
-		add( btnInventory = new Tool( 82, 7, 23, 24 ) {
+		add( btnInventory = new Tool( 60, 7, 23, 25 ) {
 			private GoldIndicator gold;
 			@Override
 			protected void onClick() {
@@ -121,7 +118,9 @@ public class Toolbar extends Component {
 			};
 		} );
 		
-		add( btnQuick = new QuickslotTool( 105, 7, 22, 24 ) );
+		add( btnQuick1 = new QuickslotTool( 83, 7, 22, 25, true ) );
+		add( btnQuick2 = new QuickslotTool( 83, 7, 22, 25, false ) );
+		btnQuick2.visible = (QuickSlot.secondaryValue != null);
 		
 		add( pickedUp = new PickedUpItem() );
 	}
@@ -131,9 +130,13 @@ public class Toolbar extends Component {
 		btnWait.setPos( x, y );
 		btnSearch.setPos( btnWait.right(), y );
 		btnInfo.setPos( btnSearch.right(), y );
-		btnResume.setPos( btnInfo.right(), y );
-		btnQuick.setPos( width - btnQuick.width(), y );
-		btnInventory.setPos( btnQuick.left() - btnInventory.width(), y );
+		btnQuick1.setPos( width - btnQuick1.width(), y );
+		if (btnQuick2.visible) {
+			btnQuick2.setPos(btnQuick1.left() - btnQuick2.width(), y );
+			btnInventory.setPos( btnQuick2.left() - btnInventory.width(), y );
+		} else {
+			btnInventory.setPos( btnQuick1.left() - btnInventory.width(), y );
+		}
 	}
 	
 	@Override
@@ -150,8 +153,6 @@ public class Toolbar extends Component {
 			}
 		}
 		
-		btnResume.visible = Dungeon.hero.lastAction != null;
-		
 		if (!Dungeon.hero.isAlive()) {
 			btnInventory.enable( true );
 		}
@@ -161,6 +162,17 @@ public class Toolbar extends Component {
 		pickedUp.reset( item, 
 			btnInventory.centerX(), 
 			btnInventory.centerY() );
+	}
+	
+	public static boolean secondQuickslot() {
+		return instance.btnQuick2.visible;
+	}
+	
+	public static void secondQuickslot( boolean value ) {
+		instance.btnQuick2.visible = 
+		instance.btnQuick2.active = 
+			value;
+		instance.layout();
 	}
 	
 	private static CellSelector.Listener informer = new CellSelector.Listener() {
@@ -193,7 +205,7 @@ public class Toolbar extends Component {
 			}
 			
 			Heap heap = Dungeon.level.heaps.get( cell );
-			if (heap != null) {
+			if (heap != null && heap.type != Heap.Type.HIDDEN) {
 				if (heap.type == Heap.Type.FOR_SALE && heap.size() == 1 && heap.peek().price() > 0) {
 					GameScene.show( new WndTradeItem( heap, false ) );
 				} else {
@@ -220,7 +232,7 @@ public class Toolbar extends Component {
 		
 		private static final int BGCOLOR = 0x7B8073;
 		
-		private Image base;
+		protected Image base;
 		
 		public Tool( int x, int y, int width, int height ) {
 			super();
@@ -277,8 +289,13 @@ public class Toolbar extends Component {
 		
 		private QuickSlot slot;
 		
-		public QuickslotTool( int x, int y, int width, int height ) {
+		public QuickslotTool( int x, int y, int width, int height, boolean primary ) {
 			super( x, y, width, height );
+			if (primary) {
+				slot.primary();
+			} else {
+				slot.secondary();
+			}
 		}
 		
 		@Override
@@ -298,7 +315,7 @@ public class Toolbar extends Component {
 		@Override
 		public void enable( boolean value ) {
 			slot.enable( value );
-			active = value;
+			super.enable( value );
 		}
 	}
 	
